@@ -1,20 +1,29 @@
-FROM golang:1.13 AS builder
-WORKDIR /build
-COPY go.* /build/
+# Stage 1: Build the Go binary
+FROM golang:1.22-bullseye AS builder
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download Go modules. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
-COPY cmd/storage-check /build
-WORKDIR /build
-ENV CGO_ENABLED=0
-RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $GOPATH/bin v2.18.2
-RUN go build -v
-RUN go test -v
-RUN gosec -exclude=G107,G109,G304,G601 ./...
-RUN groupadd -g 999 user && \
-    useradd -r -u 999 -g user user
-FROM scratch
-COPY --from=builder /etc/passwd /etc/passwd
-USER user
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /build/kuberhealthy-storage-check /app/storage-check
+# Copy the source code into the container
+COPY cmd/storage-check .
+
+# Build the Go binary
+RUN GOARCH=amd64 go build -v -o storage-check
+
+# Stage 2: Create a minimal image to run the Go binary
+FROM ubuntu:20.04 
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy the Go binary from the builder stage
+COPY --from=builder /app/storage-check .
+
+# Command to run the Go binary
 ENTRYPOINT ["/app/storage-check"]

@@ -130,10 +130,20 @@ func initializeStorageConfig(jobName string, pvcName string) *batchv1.Job {
 						ImagePullPolicy: defaultImagePullPolicy,
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "data",
-							MountPath: "/data",
+							MountPath: "/tmp",
 						}},
 						Command: command,
 						Args:    args,
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("500m"),
+								corev1.ResourceMemory: resource.MustParse("128Mi"),
+							},
+							Requests: v1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("250m"),
+								corev1.ResourceMemory: resource.MustParse("64Mi"),
+							},
+						},
 					},
 				},
 				RestartPolicy: v1.RestartPolicyNever,
@@ -142,6 +152,11 @@ func initializeStorageConfig(jobName string, pvcName string) *batchv1.Job {
 					VolumeSource: corev1.VolumeSource{PersistentVolumeClaim: pvc},
 				}},
 				Tolerations: tolerations,
+				SecurityContext: &v1.PodSecurityContext{
+					RunAsUser:  int64Ptr(1000),
+					RunAsGroup: int64Ptr(3000),
+					FSGroup:    int64Ptr(2000),
+				},
 			},
 		},
 	}
@@ -156,6 +171,10 @@ func initializeStorageConfig(jobName string, pvcName string) *batchv1.Job {
 
 	log.Infoln("Job ", jobName, " is", job, "namespace environment variables:", additionalEnvVars)
 	return job
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
 }
 
 // checkNodeConfig creates and configures a k8s job to initialize storage at PVC and returns the struct (ready to apply with client).
@@ -190,7 +209,7 @@ func checkNodeConfig(jobName string, pvcName string, node string) *batchv1.Job {
 						ImagePullPolicy: defaultImagePullPolicy,
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "data",
-							MountPath: "/data",
+							MountPath: "/tmp",
 						}},
 						Command: command,
 						Args:    args,

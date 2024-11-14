@@ -31,6 +31,7 @@ var (
 
 	allowedCheckNodesEnv = os.Getenv("CHECK_STORAGE_ALLOWED_CHECK_NODES")
 	ignoredCheckNodesEnv = os.Getenv("CHECK_STORAGE_IGNORED_CHECK_NODES")
+	nodeSelector         = os.Getenv("NODE_SELECTOR")
 
 	// By default, there is no storage class defined for the PVC (used the cluster default)
 	storageClassNameEnv = os.Getenv("CHECK_STORAGE_PVC_STORAGE_CLASS_NAME")
@@ -146,10 +147,10 @@ const (
 	defaultPvcSize = "1G"
 
 	defaultCheckStorageInitCommand     = "/bin/sh"
-	defaultCheckStorageInitCommandArgs = "echo storage-check-ok > /data/index.html && ls -la /data && cat /data/index.html"
+	defaultCheckStorageInitCommandArgs = "echo storage-check-ok > /tmp/index.html && ls -la /tmp && cat /tmp/index.html"
 
 	defaultCheckStorageCommand     = "/bin/sh"
-	defaultCheckStorageCommandArgs = "ls -la /data && cat /data/index.html && cat /data/index.html | grep storage-check-ok"
+	defaultCheckStorageCommandArgs = "ls -la /tmp && cat /tmp/index.html && cat /tmp/index.html | grep storage-check-ok"
 
 	defaultCheckStoragePvcSize
 	// Default namespace for the check to run in.

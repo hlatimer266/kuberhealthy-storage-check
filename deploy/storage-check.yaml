@@ -2,15 +2,24 @@
 apiVersion: comcast.github.io/v1
 kind: KuberhealthyCheck
 metadata:
-  name: storage-check
+  name: storage-check-hl
   namespace: kuberhealthy
 spec:
   runInterval: 5m
   timeout: 10m
   podSpec:
     containers:
-    - image: chrishirsch/kuberhealthy-storage-check:v0.0.1
-      imagePullPolicy: IfNotPresent
+    - env:
+      - name: CHECK_STORAGE_IMAGE
+        value: bitnami/nginx:1.19
+      - name: CHECK_STORAGE_INIT_IMAGE
+        value: bitnami/nginx:1.19
+      - name: CHECK_STORAGE_PVC_STORAGE_CLASS_NAME
+        value: ebs-default-test
+      - name: NODE_SELECTOR
+        value: "karpenter.sh/registered=true,topology.kubernetes.io/zone=us-west-2a"
+      image: hlatimer266/dp-kh-pv:latest
+      imagePullPolicy: Always
       name: main
       resources:
         requests:
@@ -111,3 +120,25 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: storage-sa
+---
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: ebs-csi-driver
+    meta.helm.sh/release-namespace: kube-system
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: ebs-default-test
+parameters:
+  encrypted: "true"
+  type: gp3
+provisioner: ebs.csi.aws.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate 
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.kubernetes.io/zone
+    values:
+    - us-west-2a

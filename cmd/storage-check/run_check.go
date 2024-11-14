@@ -154,7 +154,7 @@ func runStorageCheck() {
 		//TODO Maybe allow different selectors to determine how to get "usable" nodes from the cluster?
 		nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{
 			//FieldSelector: "metadata.name=" + checkStorageName,
-			// LabelSelector: defaultLabelKey + "=" + defaultLabelValueBase + strconv.Itoa(int(now.Unix())),
+			LabelSelector: nodeSelector,
 		})
 		if err != nil {
 			log.Infoln("Error on getting nodes..not sure what to do", err)
